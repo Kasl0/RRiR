@@ -1,24 +1,9 @@
-from math import sqrt, pi
+from math import pi
 import numpy as np
 import matplotlib.pyplot as plt
 
-N = 23
 
-def numericalIntegration(f):
-
-    # points and weights read from Wikipedia:
-    # https://en.wikipedia.org/wiki/Gaussian_quadrature#Gauss%E2%80%93Legendre_quadrature
-
-    x_1 = 1 / sqrt(3)
-    x_2 = -1 / sqrt(3)
-    w_1 = 1
-    w_2 = 1
-
-    integral = w_1 * f(x_1) + w_2 * f(x_2)
-
-    return integral
-
-
+# Oblicza funkcję testującą e dla zadanego n i x
 def e(x, n):
 
     H = 3
@@ -29,14 +14,11 @@ def e(x, n):
             return x/h - n + 1
         if n*h < x < (n+1)*h:
             return n + 1 - x/h
-    
-    if n == N:
-        if 0 < x < h:
-            return 1 - x/h
 
     return 0
 
 
+# Oblicza pochodną funkcji testującej e dla zadanego n i x
 def ed(x, n):
     
     H = 3
@@ -47,14 +29,12 @@ def ed(x, n):
             return 1/h
         if n*h < x < (n+1)*h:
             return -1/h
-    
-    if n == N:
-        if 0 < x < h:
-            return -1/h
 
     return 0
 
 
+# Oblicza B( e(n1), e(n2) ) czyli wyprowadzoną na kartce formułę
+# Całka obliczana metodą trapezów
 def B(n1, n2):
 
     integral = 0
@@ -69,6 +49,8 @@ def B(n1, n2):
     return integral * (-1)
 
 
+# Oblicza B( u, e(n) ) czyli składową potrzebną do wyliczenia L2(n)
+# Całka obliczana metodą trapezów
 def Bu(n):
 
     integral = 0
@@ -83,6 +65,8 @@ def Bu(n):
     return integral * (-1)
 
 
+# Oblicza L(n) czyli wyprowadzoną na kartce formułę, która jest składową potrzebną do wyliczenia L2(n)
+# Całka obliczana metodą trapezów
 def L(n):
 
     integral = 0
@@ -97,47 +81,74 @@ def L(n):
     return 4 * pi * G * integral
 
 
+# Oblicza L2 za pomocą zdefiniowanych wcześniej funkcji
 def L2(n):
     return L(n) - Bu(n)
 
 
-def run():
+# Główna funkcja
+# Generuje macierze, rozwiązuje układ równań A*X=C, wyznacza szukaną funkcję i rysuje wykres
+def run(no_elements):
+
+    # Ustawia globalną zmienną N jako parametr MES
+    global N
+    N = no_elements
+
+
+    # Układ równań do rozwiązania: A * X = C
+
+    #           [ B(1, 1)    B(2, 1)   ...   B(n−1, 1)]
+    # Gdzie A = [ B(1, 2)    B(2, 2)   ...   B(n−1, 2)]
+    #           [   ...        ...     ...      ...   ]
+    #           [ B(1, n-1) B(2, n-1)  ... B(n−1, n-1)]
+
+    # Gdzie C = [ L2(1) L2(2) ... L2(n-1)]
+
+    # A X to szukana macierz postaci = [ w(1)  w(2) ... w(n-1)]
 
     n = N-1
 
+    # Generuje macierz A
     A = np.empty((n,n))
     for i in range(n):
         for j in range(n):
             A[i,j] = B(j+1, i+1)
 
+    # Generuje macierz C
     C = np.empty(n)
     for i in range(n):
         C[i] = L2(i)
 
+    # Rozwiązuje układ równań, czyli oblicza macierz X
     X = np.linalg.solve(A, C)
 
-    def u(x):
+    # Wyznacza szukaną funkcję na podstawie wartości X i wyznaczonej na kartce funkcji u
+    def φ(x):
 
-        result = 5 - x/3
+        u = 5 - x/3
+
+        result = u
         
         for i in range(n):
             result += X[i] * e(x, i+1)
 
         return result
 
-    points = 1000
+    # Rysuje wykres φ(x) w przedziale x ∈ [0, 3]
+    no_points = 1000
+    x = np.linspace(0, 3, no_points)
 
-    x = np.linspace(0, 3, points)
-
-    y = np.empty(points)
-    for i in range(points):
-        y[i] = u(x[i])
+    y = np.empty(no_points)
+    for i in range(no_points):
+        y[i] = φ(x[i])
 
     plt.plot(x, y)
     plt.xlabel("x")
-    plt.ylabel("u(x)")
-    plt.title("Potencjał grawitacyjny")
+    plt.ylabel("φ(x)")
+    plt.title("Potencjał grawitacyjny φ")
     plt.show()
 
 
-run()
+# Odpalenie głównej funkcji z arugmentem t (ilość elementów) jako parametrem uruchomieniowym aplikacji
+t = 23
+run(t)
